@@ -10,6 +10,7 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
     document.getElementById('solutionCount').textContent = 'Solutions found: 0';
     document.getElementById('results').textContent = '';
     document.getElementById('exportCsv').style.display = 'none';
+    document.getElementById('stopCalculation').style.display = 'block';
     
     // Show loading indicator
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -43,24 +44,17 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
     // Handle messages from worker
     worker.onmessage = function(e) {
         if (e.data.type === 'progress') {
-            document.getElementById('progress').value = e.data.value;
+            const progressValue = e.data.value;
+            document.getElementById('progress').value = progressValue;
             document.getElementById('progressPercent').textContent = 
-                Math.round(e.data.value);
+                Math.round(progressValue);
         } else if (e.data.type === 'result') {
             solutionCount++;
-            results.push(e.data.result); // Store the structured result data
-            document.getElementById('solutionCount').textContent = 
-                `Solutions found: ${solutionCount}`;
+            results.push(e.data.result);
+            updateSolutionCount(solutionCount);
             document.getElementById('results').textContent += e.data.text;
         } else if (e.data.type === 'complete') {
-            loadingIndicator.classList.remove('active');
-            if (solutionCount === 0) {
-                document.getElementById('results').innerHTML = 'No solutions found.';
-            } else {
-                document.getElementById('exportCsv').style.display = 'block';
-            }
-            worker.terminate();
-            worker = null;
+            stopCalculation(false); // false means natural completion
         }
     };
 });
@@ -107,4 +101,44 @@ function generateCsv(results) {
 document.getElementById('allowTolerance').addEventListener('change', function(e) {
     document.getElementById('toleranceGroup').style.display = 
         e.target.checked ? 'block' : 'none';
-}); 
+});
+
+document.getElementById('stopCalculation').addEventListener('click', function() {
+    if (worker) {
+        stopCalculation(true); // true means stopped by user
+    }
+});
+
+function stopCalculation(stoppedByUser) {
+    // Update count with progress before hiding elements
+    updateSolutionCount(results.length, stoppedByUser);
+    
+    if (worker) {
+        worker.terminate();
+        worker = null;
+    }
+    
+    // Reset UI
+    document.getElementById('loadingIndicator').classList.remove('active');
+    document.getElementById('progress').style.display = 'none';
+    document.getElementById('stopCalculation').style.display = 'none';
+    
+    if (stoppedByUser) {
+        document.getElementById('results').textContent += '\nCalculation stopped by user.\n';
+    }
+
+    if (results.length === 0) {
+        document.getElementById('results').innerHTML = '';
+    } else {
+        document.getElementById('exportCsv').style.display = 'block';
+    }
+}
+
+function updateSolutionCount(count, stopped = false) {
+    const progressElement = document.getElementById('progressPercent');
+    const searchProgress = progressElement ? 
+        ` (searched ${progressElement.textContent}%)` : '';
+    const suffix = stopped ? searchProgress : '';
+    document.getElementById('solutionCount').textContent = 
+        `Solutions found: ${count}${suffix}`;
+} 
