@@ -1,12 +1,15 @@
 let worker = null;
+let results = []; // Store results for CSV export
 
 document.getElementById('gearForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
     // Clear previous results and initialize solution count
     let solutionCount = 0;
+    results = []; // Clear stored results
     document.getElementById('solutionCount').textContent = 'Solutions found: 0';
     document.getElementById('results').textContent = '';
+    document.getElementById('exportCsv').style.display = 'none';
     
     // Show loading indicator
     const loadingIndicator = document.getElementById('loadingIndicator');
@@ -45,6 +48,7 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
                 Math.round(e.data.value);
         } else if (e.data.type === 'result') {
             solutionCount++;
+            results.push(e.data.result); // Store the structured result data
             document.getElementById('solutionCount').textContent = 
                 `Solutions found: ${solutionCount}`;
             document.getElementById('results').textContent += e.data.text;
@@ -52,12 +56,53 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
             loadingIndicator.classList.remove('active');
             if (solutionCount === 0) {
                 document.getElementById('results').innerHTML = 'No solutions found.';
+            } else {
+                document.getElementById('exportCsv').style.display = 'block';
             }
             worker.terminate();
             worker = null;
         }
     };
 });
+
+// Add CSV export functionality
+document.getElementById('exportCsv').addEventListener('click', function() {
+    const csvContent = generateCsv(results);
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    const url = URL.createObjectURL(blob);
+    link.setAttribute('href', url);
+    link.setAttribute('download', 'gear_train_results.csv');
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+});
+
+function generateCsv(results) {
+    // Create dynamic headers based on maximum number of shafts
+    const maxShafts = Math.max(...results.map(r => r.wheels.length));
+    const headers = ['Ratio'];
+    for (let i = 0; i < maxShafts-1; i++) {
+        headers.push(`Shaft ${i+1} wheel`, `Shaft ${i+2} pinion`);
+    }
+    
+    let csv = headers.join(',') + '\n';
+    
+    // Create one row per solution
+    results.forEach(result => {
+        const row = [result.ratio];
+        for (let i = 0; i < maxShafts; i++) {
+            row.push(result.wheels[i] || '');
+            if (i < maxShafts - 1) {
+                row.push(result.pinions[i + 1] || '');
+            }
+        }
+        csv += row.join(',') + '\n';
+    });
+    
+    return csv;
+}
 
 document.getElementById('allowTolerance').addEventListener('change', function(e) {
     document.getElementById('toleranceGroup').style.display = 

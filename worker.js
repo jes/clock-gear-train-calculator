@@ -26,7 +26,7 @@ function calculateTotalCombinations(params) {
     return wheelConfigs * pinionConfigs;
 }
 
-function checkRatio(wheels, pinions, targetRatio, tolerance) {
+function calculateRatio(wheels, pinions) {
     let numerator = wheels[0];
     for (let i = 1; i < wheels.length - 1; i++) {
         numerator *= wheels[i];
@@ -37,7 +37,15 @@ function checkRatio(wheels, pinions, targetRatio, tolerance) {
         denominator *= pinions[i];
     }
 
-    const ratio = numerator / denominator;
+    return {
+        numerator,
+        denominator,
+        ratio: numerator / denominator
+    };
+}
+
+function checkRatio(wheels, pinions, targetRatio, tolerance) {
+    const { ratio, denominator, numerator } = calculateRatio(wheels, pinions);
     return tolerance === 0 ?
         Math.floor(targetRatio) * denominator === numerator :
         Math.abs(ratio - targetRatio) / targetRatio <= tolerance / 100.0;
@@ -45,9 +53,7 @@ function checkRatio(wheels, pinions, targetRatio, tolerance) {
 
 function formatResult(wheels, pinions) {
     let result = '';
-    const numerator = wheels.slice(0, -1).reduce((a, b) => a * b, 1);
-    const denominator = pinions.slice(1).reduce((a, b) => a * b, 1);
-    const ratio = numerator / denominator;
+    const { ratio } = calculateRatio(wheels, pinions);
 
     for (let i = 0; i < wheels.length; i++) {
         if (i === 0) {
@@ -82,9 +88,15 @@ self.onmessage = function(e) {
                     });
                 }
                 if (checkRatio(wheels, pinions, params.targetRatio, params.tolerance)) {
+                    const { ratio } = calculateRatio(wheels, pinions);
                     self.postMessage({
                         type: 'result',
-                        text: formatResult(wheels, pinions)
+                        text: formatResult(wheels, pinions),
+                        result: {
+                            wheels: [...wheels],
+                            pinions: [...pinions],
+                            ratio
+                        }
                     });
                 }
             } else {
