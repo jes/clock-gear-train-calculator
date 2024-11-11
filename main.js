@@ -28,7 +28,8 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
         maxWheel: parseInt(document.getElementById('maxw').value),
         shafts: parseInt(document.getElementById('shafts').value),
         targetRatio: parseFloat(document.getElementById('ratio').value),
-        tolerance: parseFloat(document.getElementById('tol').value)
+        tolerance: document.getElementById('allowTolerance').checked ? 
+            parseFloat(document.getElementById('tol').value) : 0
     };
     
     // Send data to worker
@@ -52,4 +53,9 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
             worker = null;
         }
     };
+});
+
+document.getElementById('allowTolerance').addEventListener('change', function(e) {
+    document.getElementById('toleranceGroup').style.display = 
+        e.target.checked ? 'block' : 'none';
 }); 

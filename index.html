@@ -64,8 +64,12 @@
             <input type="number" id="ratio" value="1440.0" step="0.1" required>
         </div>
         <div class="form-group">
+            <input type="checkbox" id="allowTolerance">
+            <label for="allowTolerance">Allow tolerance</label>
+        </div>
+        <div class="form-group" id="toleranceGroup" style="display: none;">
             <label for="tol">Tolerance (%):</label>
-            <input type="number" id="tol" value="0.00" step="0.01" required>
+            <input type="number" id="tol" value="0.1" step="0.01" required>
         </div>
         <button type="submit">Calculate</button>
     </form>

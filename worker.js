@@ -1,16 +1,29 @@
 function calculateTotalCombinations(params) {
-    const middleShafts = params.shafts - 2;
-    const firstShaftCombos = params.maxWheel - params.minWheel + 1;
-    const lastShaftCombos = params.maxPinion - params.minPinion + 1;
-    const middleShaftCombos = (params.maxPinion - params.minPinion + 1) * 
-                             (params.maxWheel - params.minWheel + 1);
+    // First shaft (wheel only)
+    let total = params.maxWheel - params.minWheel + 1;
     
-    let total = firstShaftCombos;
-    for (let i = 0; i < middleShafts; i++) {
-        total *= middleShaftCombos;
+    // For each middle shaft
+    let maxPossibleWheel = params.maxWheel;
+    for (let i = 1; i < params.shafts - 1; i++) {
+        const pinionsPerShaft = params.maxPinion - params.minPinion + 1;
+        let wheelCombinations = 0;
+        
+        // For each possible previous wheel size
+        for (let prevWheel = params.maxWheel; prevWheel >= params.minWheel; prevWheel--) {
+            // Count wheels that are <= prevWheel
+            const possibleWheels = Math.min(prevWheel, params.maxWheel) - params.minWheel + 1;
+            wheelCombinations += possibleWheels;
+        }
+        
+        // Average number of wheel combinations per previous wheel
+        const avgWheelCombinations = wheelCombinations / (params.maxWheel - params.minWheel + 1);
+        total *= (pinionsPerShaft * avgWheelCombinations);
     }
-    total *= lastShaftCombos;
-    return total;
+    
+    // Last shaft (pinion only)
+    total *= params.maxPinion - params.minPinion + 1;
+    
+    return Math.floor(total);
 }
 
 function checkRatio(wheels, pinions, targetRatio, tolerance) {
@@ -24,13 +37,10 @@ function checkRatio(wheels, pinions, targetRatio, tolerance) {
         denominator *= pinions[i];
     }
 
-    if (tolerance === 0.0) {
-        const targetNumerator = Math.floor(targetRatio) * denominator;
-        return targetNumerator === numerator;
-    }
-
     const ratio = numerator / denominator;
-    return Math.abs(ratio - targetRatio) / targetRatio <= tolerance / 100.0;
+    return tolerance === 0 ?
+        Math.floor(targetRatio) * denominator === numerator :
+        Math.abs(ratio - targetRatio) / targetRatio <= tolerance / 100.0;
 }
 
 function formatResult(wheels, pinions) {
@@ -60,7 +70,7 @@ self.onmessage = function(e) {
     const wheels = new Array(params.shafts).fill(0);
     const pinions = new Array(params.shafts).fill(0);
     
-    function search(shaft) {
+    function search(shaft, prevWheel) {
         if (shaft === params.shafts) {
             if (checkRatio(wheels, pinions, params.targetRatio, params.tolerance)) {
                 self.postMessage({
@@ -81,7 +91,7 @@ self.onmessage = function(e) {
                         value: (processed / totalCombinations) * 100
                     });
                 }
-                search(shaft + 1);
+                search(shaft + 1, wheel);
             }
             return;
         }
@@ -96,13 +106,13 @@ self.onmessage = function(e) {
                         value: (processed / totalCombinations) * 100
                     });
                 }
-                search(shaft + 1);
+                search(shaft + 1, 0);
             }
             return;
         }
 
         for (let pinion = params.minPinion; pinion <= params.maxPinion; pinion++) {
-            for (let wheel = params.minWheel; wheel <= params.maxWheel; wheel++) {
+            for (let wheel = params.minWheel; wheel <= Math.min(params.maxWheel, prevWheel); wheel++) {
                 pinions[shaft] = pinion;
                 wheels[shaft] = wheel;
                 processed++;
@@ -112,11 +122,11 @@ self.onmessage = function(e) {
                         value: (processed / totalCombinations) * 100
                     });
                 }
-                search(shaft + 1);
+                search(shaft + 1, wheel);
             }
         }
     }
 
-    search(0);
+    search(0, Infinity);
     self.postMessage({ type: 'complete' });
 }; 
