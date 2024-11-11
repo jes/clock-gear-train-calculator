@@ -34,55 +34,100 @@
         .loading.active {
             display: block;
         }
+        .container {
+            display: flex;
+            gap: 40px;
+            align-items: flex-start;
+        }
+        .main-content {
+            flex: 1;
+        }
+        .info-panel {
+            width: 300px;
+            background: #f5f5f5;
+            padding: 20px;
+            border-radius: 8px;
+            position: sticky;
+            top: 20px;
+        }
+        .info-panel h2 {
+            margin-top: 0;
+        }
+        .results-section {
+            max-width: 100%;
+            margin-top: 40px;
+        }
     </style>
 </head>
 <body>
     <h1>Clock Gear Train Calculator</h1>
-    <form id="gearForm">
-        <div class="form-group">
-            <label for="minp">Minimum pinion teeth:</label>
-            <input type="number" id="minp" value="8" required>
+    <div class="container">
+        <div class="main-content">
+            <form id="gearForm">
+                <div class="form-group">
+                    <label for="minp">Minimum pinion teeth:</label>
+                    <input type="number" id="minp" value="8" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxp">Maximum pinion teeth:</label>
+                    <input type="number" id="maxp" value="16" required>
+                </div>
+                <div class="form-group">
+                    <label for="minw">Minimum wheel teeth:</label>
+                    <input type="number" id="minw" value="60" required>
+                </div>
+                <div class="form-group">
+                    <label for="maxw">Maximum wheel teeth:</label>
+                    <input type="number" id="maxw" value="140" required>
+                </div>
+                <div class="form-group">
+                    <label for="shafts">Number of shafts:</label>
+                    <input type="number" id="shafts" value="4" required>
+                </div>
+                <div class="form-group">
+                    <label for="ratio">Target ratio:</label>
+                    <input type="number" id="ratio" value="1440.0" step="0.1" required>
+                </div>
+                <div class="form-group">
+                    <input type="checkbox" id="allowTolerance">
+                    <label for="allowTolerance">Allow tolerance</label>
+                </div>
+                <div class="form-group" id="toleranceGroup" style="display: none;">
+                    <label for="tol">Tolerance (%):</label>
+                    <input type="number" id="tol" value="0.1" step="0.01" required>
+                </div>
+                <button type="submit">Calculate</button>
+                <button type="button" id="stopCalculation" style="display: none;">Stop Calculation</button>
+            </form>
+            
+            <div class="loading" id="loadingIndicator">
+                <p>Calculating... <span id="progressPercent">0</span>% complete</p>
+                <progress id="progress" value="0" max="100"></progress>
+            </div>
         </div>
-        <div class="form-group">
-            <label for="maxp">Maximum pinion teeth:</label>
-            <input type="number" id="maxp" value="16" required>
+        
+        <div class="info-panel">
+            <h2>About</h2>
+            <p>This tool searches for possible clock gear trains to satisfy the target ratio.</p>
+            <p>In a clock gear train:</p>
+            <ul>
+                <li>The first shaft only has a wheel (driving gear)</li>
+                <li>Middle shafts have both a pinion (driven gear) and a wheel</li>
+                <li>The last shaft only has a pinion</li>
+                <li>So for 3 gear reductions, there are 4 shafts</li>
+            </ul>
+            <p>This arrangement ensures proper power transmission through the gear train while achieving the desired ratio.</p>
         </div>
-        <div class="form-group">
-            <label for="minw">Minimum wheel teeth:</label>
-            <input type="number" id="minw" value="60" required>
-        </div>
-        <div class="form-group">
-            <label for="maxw">Maximum wheel teeth:</label>
-            <input type="number" id="maxw" value="140" required>
-        </div>
-        <div class="form-group">
-            <label for="shafts">Number of shafts:</label>
-            <input type="number" id="shafts" value="4" required>
-        </div>
-        <div class="form-group">
-            <label for="ratio">Target ratio:</label>
-            <input type="number" id="ratio" value="1440.0" step="0.1" required>
-        </div>
-        <div class="form-group">
-            <input type="checkbox" id="allowTolerance">
-            <label for="allowTolerance">Allow tolerance</label>
-        </div>
-        <div class="form-group" id="toleranceGroup" style="display: none;">
-            <label for="tol">Tolerance (%):</label>
-            <input type="number" id="tol" value="0.1" step="0.01" required>
-        </div>
-        <button type="submit">Calculate</button>
-        <button type="button" id="stopCalculation" style="display: none;">Stop Calculation</button>
-    </form>
-    
-    <div class="loading" id="loadingIndicator">
-        <p>Calculating... <span id="progressPercent">0</span>% complete</p>
-        <progress id="progress" value="0" max="100"></progress>
     </div>
-    
-    <div id="solutionCount">Solutions found: 0</div>
-    <button id="exportCsv" style="display: none; margin-top: 10px;">Export to CSV</button>
-    <div id="results" class="results"></div>
+
+    <div class="results-section">
+        <div id="solutionCount">Solutions found: 0</div>
+        <button id="exportCsv" style="display: none; margin-top: 10px;">Export to CSV</button>
+        <div id="results" class="results"></div>
+
+        <hr>
+        By <a href="https://incoherency.co.uk/">James Stanley</a>
+    </div>
 
     <script src="main.js"></script>
 </body>
