@@ -1,5 +1,6 @@
 let worker = null;
 let results = []; // Store results for CSV export
+let searchStartTime = null; // Add this line to store start time
 
 document.getElementById('gearForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -7,6 +8,7 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
     // Clear previous results and initialize solution count
     let solutionCount = 0;
     results = []; // Clear stored results
+    searchStartTime = Date.now(); // Add this line to capture start time
     document.getElementById('solutionCount').textContent = 'Solutions found: 0';
     document.getElementById('results').textContent = '';
     document.getElementById('exportCsv').style.display = 'none';
@@ -110,8 +112,11 @@ document.getElementById('stopCalculation').addEventListener('click', function() 
 });
 
 function stopCalculation(stoppedByUser) {
+    // Calculate duration
+    const duration = ((Date.now() - searchStartTime) / 1000).toFixed(1);
+    
     // Update count with progress before hiding elements
-    updateSolutionCount(results.length, stoppedByUser);
+    updateSolutionCount(results.length, stoppedByUser, duration);
     
     if (worker) {
         worker.terminate();
@@ -134,11 +139,12 @@ function stopCalculation(stoppedByUser) {
     }
 }
 
-function updateSolutionCount(count, stopped = false) {
+function updateSolutionCount(count, stopped = false, duration = null) {
     const progressElement = document.getElementById('progressPercent');
     const searchProgress = progressElement ? 
         ` (searched ${progressElement.textContent}%)` : '';
+    const durationText = duration ? ` in ${duration}s` : '';
     const suffix = stopped ? searchProgress : '';
     document.getElementById('solutionCount').textContent = 
-        `Solutions found: ${count}${suffix}`;
+        `Solutions found: ${count}${durationText}${suffix}`;
 } 
