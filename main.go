@@ -6,12 +6,6 @@ import (
 	"math"
 )
 
-type GearTrain struct {
-	wheels  []int
-	pinions []int
-	ratio   float64
-}
-
 func main() {
 	minPinion := flag.Int("minp", 8, "Minimum pinion teeth")
 	maxPinion := flag.Int("maxp", 16, "Maximum pinion teeth")
