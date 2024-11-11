@@ -64,7 +64,7 @@ function formatResult(wheels, pinions) {
             result += `Shaft ${i + 1}: Pinion: ${pinions[i]}, Wheel: ${wheels[i]}\n`;
         }
     }
-    result += `Ratio: ${ratio.toFixed(3)}\n\n`;
+    result += `Ratio: ${ratio}\n\n`;
     return result;
 }
 
