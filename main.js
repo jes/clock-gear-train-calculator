@@ -3,7 +3,9 @@ let worker = null;
 document.getElementById('gearForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    // Clear previous results
+    // Clear previous results and initialize solution count
+    let solutionCount = 0;
+    document.getElementById('solutionCount').textContent = 'Solutions found: 0';
     document.getElementById('results').textContent = '';
     
     // Show loading indicator
@@ -42,12 +44,14 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
             document.getElementById('progressPercent').textContent = 
                 Math.round(e.data.value);
         } else if (e.data.type === 'result') {
+            solutionCount++;
+            document.getElementById('solutionCount').textContent = 
+                `Solutions found: ${solutionCount}`;
             document.getElementById('results').textContent += e.data.text;
         } else if (e.data.type === 'complete') {
             loadingIndicator.classList.remove('active');
-            if (!document.getElementById('results').textContent) {
-                document.getElementById('results').textContent = 
-                    'No solutions found.';
+            if (solutionCount === 0) {
+                document.getElementById('results').innerHTML = 'No solutions found.';
             }
             worker.terminate();
             worker = null;
