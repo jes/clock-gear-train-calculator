@@ -1,29 +1,29 @@
-function calculateTotalCombinations(params) {
-    // First shaft (wheel only)
-    let total = params.maxWheel - params.minWheel + 1;
-    
-    // For each middle shaft
-    let maxPossibleWheel = params.maxWheel;
-    for (let i = 1; i < params.shafts - 1; i++) {
-        const pinionsPerShaft = params.maxPinion - params.minPinion + 1;
-        let wheelCombinations = 0;
-        
-        // For each possible previous wheel size
-        for (let prevWheel = params.maxWheel; prevWheel >= params.minWheel; prevWheel--) {
-            // Count wheels that are <= prevWheel
-            const possibleWheels = Math.min(prevWheel, params.maxWheel) - params.minWheel + 1;
-            wheelCombinations += possibleWheels;
-        }
-        
-        // Average number of wheel combinations per previous wheel
-        const avgWheelCombinations = wheelCombinations / (params.maxWheel - params.minWheel + 1);
-        total *= (pinionsPerShaft * avgWheelCombinations);
+function nestedLoopIterations(n, levels) {
+    let result = 1;
+
+    // Calculate n * (n + 1) * (n + 2) * ... * (n + levels - 1)
+    for (let i = 0; i < levels; i++) {
+        result *= (n + i);
     }
-    
-    // Last shaft (pinion only)
-    total *= params.maxPinion - params.minPinion + 1;
-    
-    return Math.floor(total);
+
+    // Divide by levels! (factorial of levels)
+    for (let i = 1; i <= levels; i++) {
+        result /= i;
+    }
+
+    return result;
+}
+
+function calculateTotalCombinations(params) {
+    const wheelRange = params.maxWheel - params.minWheel + 1;
+    const pinionRange = params.maxPinion - params.minPinion + 1;
+
+    // Number of configurations for wheels and pinions
+    const wheelConfigs = nestedLoopIterations(wheelRange, params.shafts - 1);
+    const pinionConfigs = nestedLoopIterations(pinionRange, params.shafts - 1);
+
+    // Total configurations
+    return wheelConfigs * pinionConfigs;
 }
 
 function checkRatio(wheels, pinions, targetRatio, tolerance) {
@@ -69,64 +69,39 @@ self.onmessage = function(e) {
     
     const wheels = new Array(params.shafts).fill(0);
     const pinions = new Array(params.shafts).fill(0);
-    
-    function search(shaft, prevWheel) {
-        if (shaft === params.shafts) {
-            if (checkRatio(wheels, pinions, params.targetRatio, params.tolerance)) {
-                self.postMessage({
-                    type: 'result',
-                    text: formatResult(wheels, pinions)
-                });
-            }
-            return;
-        }
 
-        if (shaft === 0) {
-            for (let wheel = params.minWheel; wheel <= params.maxWheel; wheel++) {
-                wheels[shaft] = wheel;
-                processed++;
-                if (processed % 1000 === 0) {
+    function search(shaft, prevWheel, prevPinion) {
+        for (let pinion = params.minPinion; pinion <= prevPinion; pinion++) {
+            pinions[shaft] = pinion;
+            if (shaft === params.shafts - 1) {
+                // last shaft: report progress and check ratio
+                if (++processed % 1000 === 0) {
                     self.postMessage({
                         type: 'progress',
                         value: (processed / totalCombinations) * 100
                     });
                 }
-                search(shaft + 1, wheel);
-            }
-            return;
-        }
-
-        if (shaft === params.shafts - 1) {
-            for (let pinion = params.minPinion; pinion <= params.maxPinion; pinion++) {
-                pinions[shaft] = pinion;
-                processed++;
-                if (processed % 1000 === 0) {
+                if (checkRatio(wheels, pinions, params.targetRatio, params.tolerance)) {
                     self.postMessage({
-                        type: 'progress',
-                        value: (processed / totalCombinations) * 100
+                        type: 'result',
+                        text: formatResult(wheels, pinions)
                     });
                 }
-                search(shaft + 1, 0);
-            }
-            return;
-        }
-
-        for (let pinion = params.minPinion; pinion <= params.maxPinion; pinion++) {
-            for (let wheel = params.minWheel; wheel <= Math.min(params.maxWheel, prevWheel); wheel++) {
-                pinions[shaft] = pinion;
-                wheels[shaft] = wheel;
-                processed++;
-                if (processed % 1000 === 0) {
-                    self.postMessage({
-                        type: 'progress',
-                        value: (processed / totalCombinations) * 100
-                    });
+            } else {
+                // not last shaft: pick a wheel and recurse
+                for (let wheel = params.minWheel; wheel <= prevWheel; wheel++) {
+                    wheels[shaft] = wheel;
+                    search(shaft + 1, wheel, pinion);
                 }
-                search(shaft + 1, wheel);
             }
         }
     }
 
-    search(0, Infinity);
+    // first shaft: pick a wheel and search the rest of the shafts
+    for (let wheel = params.minWheel; wheel <= params.maxWheel; wheel++) {
+        wheels[0] = wheel;
+        search(1, wheel, params.maxPinion);
+    }
+
     self.postMessage({ type: 'complete' });
 }; 
