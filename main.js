@@ -1,6 +1,7 @@
 let worker = null;
 let results = []; // Store results for CSV export
 let searchStartTime = null; // Add this line to store start time
+let targetRatio = null; // Store target ratio for sorting
 
 document.getElementById('gearForm').addEventListener('submit', function(e) {
     e.preventDefault();
@@ -29,13 +30,14 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
     worker = new Worker('worker.js');
     
     // Get form values
+    targetRatio = parseFloat(document.getElementById('ratio').value);
     const params = {
         minPinion: parseInt(document.getElementById('minp').value),
         maxPinion: parseInt(document.getElementById('maxp').value),
         minWheel: parseInt(document.getElementById('minw').value),
         maxWheel: parseInt(document.getElementById('maxw').value),
         shafts: parseInt(document.getElementById('shafts').value),
-        targetRatio: parseFloat(document.getElementById('ratio').value),
+        targetRatio: targetRatio,
         tolerance: document.getElementById('allowTolerance').checked ? 
             parseFloat(document.getElementById('tol').value) : 0
     };
@@ -53,8 +55,16 @@ document.getElementById('gearForm').addEventListener('submit', function(e) {
         } else if (e.data.type === 'result') {
             solutionCount++;
             results.push(e.data.result);
+            
+            // Sort results by closeness to target ratio
+            results.sort((a, b) => {
+                const diffA = Math.abs(a.ratio - targetRatio);
+                const diffB = Math.abs(b.ratio - targetRatio);
+                return diffA - diffB;
+            });
+            
             updateSolutionCount(solutionCount);
-            document.getElementById('results').textContent += e.data.text;
+            renderResults();
         } else if (e.data.type === 'complete') {
             stopCalculation(false); // false means natural completion
         }
@@ -147,4 +157,21 @@ function updateSolutionCount(count, stopped = false, duration = null) {
     const suffix = stopped ? searchProgress : '';
     document.getElementById('solutionCount').textContent = 
         `Solutions found: ${count}${durationText}${suffix}`;
+}
+
+function renderResults() {
+    let output = '';
+    results.forEach(result => {
+        for (let i = 0; i < result.wheels.length; i++) {
+            if (i === 0) {
+                output += `Shaft ${i + 1}: Wheel: ${result.wheels[i]}\n`;
+            } else if (i === result.wheels.length - 1) {
+                output += `Shaft ${i + 1}: Pinion: ${result.pinions[i]}\n`;
+            } else {
+                output += `Shaft ${i + 1}: Pinion: ${result.pinions[i]}, Wheel: ${result.wheels[i]}\n`;
+            }
+        }
+        output += `Ratio: ${result.ratio}\n\n`;
+    });
+    document.getElementById('results').textContent = output;
 } 
