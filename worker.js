@@ -47,7 +47,7 @@ function calculateRatio(wheels, pinions) {
 function checkRatio(wheels, pinions, targetRatio, tolerance) {
     const { ratio, denominator, numerator } = calculateRatio(wheels, pinions);
     return tolerance === 0 ?
-        Math.floor(targetRatio) * denominator === numerator :
+        targetRatio * denominator === numerator :
         Math.abs(ratio - targetRatio) / targetRatio <= tolerance / 100.0;
 }
 
